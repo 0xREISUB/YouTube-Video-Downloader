@@ -19,14 +19,13 @@
     * **Linux:** Uses native Zenity dialogs (Nautilus style).
     * **Windows:** Falls back to Tkinter dialogs automatically.
 * **Modern UI:** Dark mode with Glassmorphism design and smooth animations.
-* **Privacy Focused:** Runs locally on `127.0.0.1`, inaccessible from outside networks.
 
 ### 🛠 Installation
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/USERNAME/YT-Pro-Downloader.git](https://github.com/USERNAME/YT-Pro-Downloader.git)
-    cd YT-Pro-Downloader
+    git clone [https://github.com/reis241/YouTube-Video-Downloader.git](https://github.com/reis241/YouTube-Video-Downloader.git)
+    cd YouTube-Video-Downloader
     ```
 
 2.  **Install dependencies:**
@@ -62,14 +61,13 @@
     * **Linux:** Yerel Zenity pencerelerini kullanır (Nautilus tarzı).
     * **Windows:** Otomatik olarak Tkinter penceresine geçer.
 * **Modern Arayüz:** Glassmorphism tasarımlı, animasyonlu karanlık mod (Dark Mode).
-* **Gizlilik Odaklı:** Sadece `127.0.0.1` (Localhost) üzerinde çalışır, dış ağlardan erişilemez.
 
 ### 🛠 Kurulum
 
 1.  **Repoyu klonlayın:**
     ```bash
-    git clone [https://github.com/KULLANICI_ADIN/YT-Pro-Downloader.git](https://github.com/KULLANICI_ADIN/YT-Pro-Downloader.git)
-    cd YT-Pro-Downloader
+    git clone [https://github.com/reis241/YouTube-Video-Downloader.git](https://github.com/reis241/YouTube-Video-Downloader.git)
+    cd YouTube-Video-Downloader
     ```
 
 2.  **Gereksinimleri yükleyin:**
