@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YT Downloader</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+
+    <style>
+        /* --- Temel Yapı ve Arkaplan --- */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- Kart Tasarımı (Glassmorphism) --- */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .app-title {
+            font-weight: 600;
+            background: linear-gradient(90deg, #ff8a00, #e52e71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+        }
+
+        /* --- Form Elemanları --- */
+        .form-control {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-radius: 10px;
+            padding: 12px;
+        }
+        .form-control:focus {
+            background: rgba(0, 0, 0, 0.5);
+            border-color: #e52e71;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(229, 46, 113, 0.3);
+        }
+        .form-control::placeholder { color: #aaa; }
+
+        /* --- Butonlar --- */
+        .btn-custom-folder {
+            background: #ff8a00;
+            border: none;
+            color: white;
+            border-radius: 0 10px 10px 0;
+            font-weight: 500;
+        }
+        
+        .btn-custom-download {
+            background: linear-gradient(45deg, #e52e71, #ff8a00);
+            border: none;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-custom-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(229, 46, 113, 0.4);
+            color: #fff;
+        }
+
+        /* --- Medya Alanı --- */
+        .thumb-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            margin: 0 auto;
+            max-width: 320px;
+        }
+        .thumb-container img {
+            width: 100%;
+            display: block;
+            transition: transform 0.5s ease;
+        }
+        .thumb-container:hover img {
+            transform: scale(1.05);
+        }
+
+        /* --- İlerleme Çubukları --- */
+        .progress {
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        .progress-bar-gradient {
+            background: linear-gradient(90deg, #ff8a00, #e52e71);
+            box-shadow: 0 0 10px rgba(229, 46, 113, 0.5);
+        }
+        .progress-bar-processing {
+            background: linear-gradient(90deg, #f1c40f, #f39c12);
+            box-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
+            color: #000;
+            font-weight: bold;
+        }
+
+        /* --- İstatistik Kutuları --- */
+        .stat-box {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .stat-label { font-size: 0.75rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-size: 1rem; font-weight: 600; color: #fff; }
+
+        .playlist-card {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* --- Animasyonlar --- */
+        .fade-in-up { animation: fadeInUp 0.5s ease forwards; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            
+            <div class="glass-card p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <i class="fab fa-youtube fa-3x mb-2" style="color: #e52e71;"></i>
+                    <h3 class="app-title">YT Downloader</h3>
+                </div>
+
+                <div class="input-group mb-3">
+                    <span class="input-group-text bg-dark border-0 text-white"><i class="fas fa-folder-open"></i></span>
+                    <input id="pathInput" class="form-control" readonly value="{{ default_path }}" placeholder="Kaydedilecek klasör...">
+                    <button class="btn btn-custom-folder" onclick="selectFolder()">Gözat</button>
+                </div>
+
+                <div class="input-group mb-4">
+                    <span class="input-group-text bg-dark border-0 text-white"><i class="fas fa-link"></i></span>
+                    <input id="urlInput" class="form-control" placeholder="YouTube video veya playlist linki yapıştırın...">
+                    <button class="btn btn-custom-download px-4" onclick="startDownload()">
+                        <i class="fas fa-download me-2"></i> İNDİR
+                    </button>
+                </div>
+
+                <div id="statusArea" class="fade-in-up" style="display:none;">
+                    <hr class="border-secondary opacity-25 my-4">
+                    
+                    <div class="thumb-container mb-3">
+                        <img id="videoThumb" src="" alt="Video Kapak">
+                    </div>
+
+                    <h6 id="videoName" class="text-center mb-3 text-white text-truncate px-2">Hazırlanıyor...</h6>
+                    
+                    <div class="progress mb-3" style="height: 20px;">
+                        <div id="videoBar" class="progress-bar progress-bar-striped progress-bar-animated progress-bar-gradient" role="progressbar" style="width: 0%">0%</div>
+                    </div>
+
+                    <div class="row g-3 mb-3" id="statsRow">
+                        <div class="col-6">
+                            <div class="stat-box">
+                                <div class="stat-label"><i class="fas fa-tachometer-alt me-1"></i> Hız</div>
+                                <div class="stat-value" id="speedStat">-- MB/s</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-box">
+                                <div class="stat-label"><i class="fas fa-clock me-1"></i> Kalan Süre</div>
+                                <div class="stat-value" id="etaStat">--:--</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="playlistSection" class="playlist-card p-3 mt-3 fade-in-up" style="display:none;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-white-50"><i class="fas fa-list-ul me-2"></i>Playlist İlerlemesi</small>
+                            <span class="badge bg-secondary"><span id="plIndex">0</span> / <span id="plTotal">0</span></span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div id="playlistBar" class="progress-bar bg-info" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div> 
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const socket = io();
+
+// --- DOM Element Seçimleri ---
+const dom = {
+    statusArea: document.getElementById('statusArea'),
+    videoThumb: document.getElementById('videoThumb'),
+    videoName: document.getElementById('videoName'),
+    videoBar: document.getElementById('videoBar'),
+    speedStat: document.getElementById('speedStat'),
+    etaStat: document.getElementById('etaStat'),
+    statsRow: document.getElementById('statsRow'),
+    pathInput: document.getElementById('pathInput'),
+    urlInput: document.getElementById('urlInput'),
+    // Playlist Elemanları
+    playlist: {
+        section: document.getElementById('playlistSection'),
+        bar: document.getElementById('playlistBar'),
+        index: document.getElementById('plIndex'),
+        total: document.getElementById('plTotal')
+    }
+};
+
+// --- Klasör Seçme İşlemi ---
+function selectFolder() {
+    fetch('/select-folder', {method:'POST'})
+    .then(response => response.json())
+    .then(data => { 
+        if(data.path) dom.pathInput.value = data.path; 
+    })
+    .catch(console.error);
+}
+
+// --- İndirme Başlatma İşlemi ---
+function startDownload() {
+    const url = dom.urlInput.value;
+    const path = dom.pathInput.value;
+
+    if(!url || !path) {
+        alert("Lütfen geçerli bir URL ve klasör seçiniz.");
+        return;
+    }
+
+    // Arayüzü Sıfırla
+    dom.statusArea.style.display = 'block';
+    dom.videoBar.className = "progress-bar progress-bar-striped progress-bar-animated progress-bar-gradient";
+    dom.videoBar.style.width = '0%';
+    dom.videoBar.innerText = 'Başlatılıyor...';
+    
+    dom.statsRow.style.display = 'flex';
+    dom.speedStat.innerText = "--";
+    dom.etaStat.innerText = "--";
+
+    dom.playlist.bar.style.width = '0%';
+    dom.playlist.section.style.display = 'none';
+    dom.videoThumb.style.display = 'none';
+    
+    socket.emit('start_download', {url: url, path: path});
+}
+
+// --- Socket.IO Olay Dinleyicileri ---
+
+// 1. Metadata: İndirme başlamadan önceki hazırlık verisi
+socket.on('metadata', data => {
+    dom.videoName.innerText = data.title;
+    
+    if(data.thumbnail) {
+        dom.videoThumb.src = data.thumbnail;
+        dom.videoThumb.style.display = 'block';
+    }
+    
+    if(data.is_playlist) {
+        dom.playlist.section.style.display = 'block';
+        dom.playlist.total.innerText = data.playlist_total;
+        dom.playlist.index.innerText = "1"; 
+    }
+});
+
+// 2. Progress: İndirme sırasındaki anlık veriler
+socket.on('progress', data => {
+    // Görsel güncelleme (varsa)
+    if(data.thumbnail && dom.videoThumb.src !== data.thumbnail) {
+        dom.videoThumb.src = data.thumbnail;
+        dom.videoThumb.style.display = 'block';
+    }
+
+    // Playlist verisi güncelleme
+    if(data.is_playlist) {
+        dom.playlist.section.style.display = 'block';
+        if(data.playlist_index && data.playlist_index > 0) {
+            dom.playlist.index.innerText = data.playlist_index;
+        }
+        dom.playlist.total.innerText = data.playlist_total;
+        dom.playlist.bar.style.width = data.playlist_percent + "%";
+    }
+
+    // Durum: İndiriliyor
+    if(data.status === 'downloading'){
+        // Eğer önceki işlemden kalma 'processing' sınıfı varsa temizle
+        if(dom.videoBar.classList.contains('progress-bar-processing')) {
+            dom.videoBar.classList.remove('progress-bar-processing');
+            dom.videoBar.classList.add('progress-bar-gradient');
+            dom.statsRow.style.display = 'flex';
+        }
+
+        dom.videoBar.style.width = data.percent + "%";
+        dom.videoBar.innerText = `%${data.percent}`;
+        dom.videoName.innerText = data.title;
+        
+        dom.speedStat.innerText = data.speed;
+        dom.etaStat.innerText = data.eta;
+    }
+    
+    // Durum: İşleniyor (FFmpeg birleştirme)
+    else if(data.status === 'processing'){
+        dom.videoBar.classList.remove('progress-bar-gradient');
+        dom.videoBar.classList.add('progress-bar-processing');
+        
+        dom.videoBar.style.width = "100%";
+        dom.videoBar.innerText = "İŞLENİYOR...";
+        dom.videoName.innerText = "Birleştiriliyor: " + data.title;
+        
+        // İşlem sırasında hız/süre verisi anlamsız olduğu için gizle
+        dom.statsRow.style.display = 'none';
+    }
+});
+
+// 3. Done: İşlem tamamlandı
+socket.on('done', msg => {
+    dom.videoBar.className = "progress-bar bg-success"; 
+    dom.videoBar.style.width = "100%";
+    dom.videoBar.innerText = "TAMAMLANDI";
+    
+    setTimeout(() => { alert(msg.msg); }, 500);
+});
+
+// 4. Error: Hata yönetimi
+socket.on('error', err => {
+    dom.videoName.innerText = "HATA";
+    dom.videoName.classList.add("text-danger");
+    alert(err.msg);
+});
+</script>
+
+</body>
+</html>
